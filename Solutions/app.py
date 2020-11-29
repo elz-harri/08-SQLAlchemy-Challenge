@@ -1,22 +1,42 @@
-import pandas as pd
-import numpy as np
 import datetime as dt
-# -----------------------------------------------------------
+import numpy as np
+import pandas as pd
+
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
 
 from flask import Flask, jsonify
-#------------------------------------------------------------
-engine = create_engine("sqlite:///hawaii.sqlite")
-Base = automap_base()
-Base.prepare(engine, reflect=True)
-session = Session(engine)
 
+
+#################################################
+# Database Setup
+#################################################
+engine = create_engine("sqlite:///hawaii.sqlite")
+
+# reflect an existing database into a new model
+Base = automap_base()
+# reflect the tables
+Base.prepare(engine, reflect=True)
+
+# Save references to each table
 Measurement = Base.classes.measurement
 Station = Base.classes.station
-#-------------------------------------------------------------
+
+# Create our session (link) from Python to the DB
+session = Session(engine)
+
+#################################################
+# Flask Setup
+#################################################
+app = Flask(__name__)
+
+
+#################################################
+# Flask Routes
+#################################################
+
 @app.route("/")
 def welcome():
     return (
@@ -27,7 +47,8 @@ def welcome():
         f"/api/v1.0/tobs<br/>"
         f"/api/v1.0/temp/start/end"
     )
-#---------------------------------------------------------------
+
+
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     """Return the precipitation data for the last year"""
@@ -41,8 +62,9 @@ def precipitation():
     # Dict with date as the key and prcp as the value
     precip = {date: prcp for date, prcp in precipitation}
     return jsonify(precip)
-#----------------------------------------------------------------
-    @app.route("/api/v1.0/stations")
+
+
+@app.route("/api/v1.0/stations")
 def stations():
     """Return a list of stations."""
     results = session.query(Station.station).all()
@@ -50,7 +72,8 @@ def stations():
     # Unravel results into a 1D array and convert to a list
     stations = list(np.ravel(results))
     return jsonify(stations=stations)
-#---------------------------------------------------------------
+
+
 @app.route("/api/v1.0/tobs")
 def temp_monthly():
     """Return the temperature observations (tobs) for previous year."""
@@ -67,7 +90,8 @@ def temp_monthly():
 
     # Return the results
     return jsonify(temps=temps)
-#---------------------------------------------------------------
+
+
 @app.route("/api/v1.0/temp/<start>")
 @app.route("/api/v1.0/temp/<start>/<end>")
 def stats(start=None, end=None):
